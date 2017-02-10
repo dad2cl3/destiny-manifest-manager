@@ -5,7 +5,7 @@ Database and PHP scripts used to load the Destiny SQLite manifest file to a Post
 
 Documentation on setting up Postgres can be found at https://www.postgresql.org.
 
-The manifest data is managed in the manifest schema.
+The manifest data is staged and managed in the manifest schema.
 
 All database scripts are located in the sql folder.
 

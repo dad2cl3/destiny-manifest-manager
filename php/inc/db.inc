@@ -6,8 +6,6 @@
 	$dbpwd = 'YOUR-DATABASE-USER-PASSWORD';
 	$dbi = 'YOUR-DATABASE-INSTANCE';
 	
-	$dbstg = 'stg';
-	$dbprod = 'io';
-	$dbarc = 'archive';
+	$dbman = 'manifest';
 	
 ?>

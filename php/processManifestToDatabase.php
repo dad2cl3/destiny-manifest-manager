@@ -1,8 +1,8 @@
 <?php
 include 'manifestFunctions.php';
-include 'YOUR-PATH-HERE/inc/api.inc';
-include 'YOUR-PATH-HERE/inc/db.inc';
-include 'YOUR-PATH-HERE/inc/server.inc';
+include 'YOUR-PATH-HERE/php/inc/api.inc';
+include 'YOUR-PATH-HERE/php/inc/db.inc';
+include 'YOUR-PATH-HERE/php/inc/server.inc';
 include 'functions.php';
 
 	//Retrieve the current manifest file name
@@ -23,6 +23,8 @@ include 'functions.php';
 	//Download the manifest if the file doesn't exist locally
 	if (!file_exists($dataDir.$localPath)) {
 		get_manifest($path, $dataDir.$localPath);
+	} else {
+		echo 'Manifest file ' .$dataDir.$localPath. ' already exists</br>';
 	}
 	
 	//Open Postgres database connection
@@ -46,7 +48,7 @@ include 'functions.php';
 		//Process the manifest
 		echo 'Processing ' .$localPath. '...</br>';
 		
-		//Open the connection to the manifest*/
+		//Open the connection to the manifest
 		$manConn = open_manifest_connection($dataDir.$localPath);
 		
 		//Process the metadata
@@ -67,6 +69,29 @@ include 'functions.php';
 		
 		echo 'Staged ' .$stgCount. ' table(s)...</br>';
 		
+		//Load existing tables
+		$sql = 'SELECT table_id FROM ' .$dbman. '.t_manifest_tables tmt';
+		$sql .= ' WHERE EXISTS (SELECT \'x\' FROM ' .$dbman. '.t_stg_manifest_tables tsmt';
+		$sql .= ' WHERE tmt.table_name = tsmt.table_name)';
+		$sql .= ' ORDER BY table_name';
+		
+		//echo $sql. '</br>'; //Troubleshooting
+		
+		$oldResult = pg_query($pgConn, $sql);
+		$oldTables = pg_fetch_all($oldResult);
+		
+		$oldTableCount = 0;
+		
+		foreach ($oldTables as $table) {
+			$sql = 'INSERT INTO ' .$dbman. '.t_manifest_manifest_tables (manifest_id, table_id) VALUES (';
+			$sql .= $manifest_id. ',' .$table['table_id']. ')';
+			
+			$oldResult = pg_query($pgConn, $sql);
+			$oldTableCount += pg_affected_rows($oldResult);
+		}
+		
+		echo 'Loaded ' .$oldTableCount. ' existing tables...</br>';
+		
 		//Identify new tables
 		$sql = 'SELECT table_name, record_count FROM ' .$dbman. '.t_stg_manifest_tables';
 		$sql .= ' WHERE NOT EXISTS (SELECT \'x\' FROM ' .$dbman. '.t_manifest_tables';
@@ -82,15 +107,26 @@ include 'functions.php';
 		foreach ($newTables as $table) {
 			$layout = get_manifest_table_layout($manConn, $table['table_name']);
 			
-			$sql = 'INSERT INTO ' .$dbman. '.t_manifest_tables (manifest_id, table_name, record_count, normal_layout)';
-			$sql .= ' VALUES (\'' .$manifest_id. '\',\'' .$table['table_name']. '\',' .$table['record_count']. ', \'' .$layout. '\') RETURNING table_id';
-			//echo $sql. '</br>';
+			//$sql = 'INSERT INTO ' .$dbman. '.t_manifest_tables (manifest_id, table_name, record_count, normal_layout)';
+			//$sql .= ' VALUES (\'' .$manifest_id. '\',\'' .$table['table_name']. '\',' .$table['record_count']. ', \'' .$layout. '\') RETURNING table_id';
+			
+			$sql = 'INSERT INTO ' .$dbman. '.t_manifest_tables (table_name, normal_layout)';
+			$sql .= ' VALUES (\'' .$table['table_name']. '\',\'' .$layout. '\') RETURNING table_id';
+			//echo $sql. '</br>'; //Troubleshooting
 			
 			$newResult = pg_query($pgConn, $sql);
 			$newTableCount += pg_affected_rows($newResult);
 			
 			$newTable = pg_fetch_all($newResult);
+			
 			$newTableId = $newTable[0]['table_id'];
+			
+			//Load intersection record between new table and manifest
+			$sql = 'INSERT INTO ' .$dbman. '.t_manifest_manifest_tables (manifest_id, table_id) VALUES (';
+			$sql .= $manifest_id. ',' .$newTableId. ')';
+			//echo $sql. '</br>'; //Troubleshooting
+				
+			$intersectionResult = pg_query($pgConn, $sql);
 			
 			//Create the new table to hold the data
 			echo 'Converting table name ' .$table['table_name']. '</br>';
@@ -132,7 +168,7 @@ include 'functions.php';
 			$sql = 'INSERT INTO ' .$dbman. '.t_field_mappings (table_id, source_field, target_field, staging) VALUES (';
 			$sql .= $newTableId. ',\'json::jsonb\', \'json\', true)';
 			pg_query($pgConn, $sql);
-			
+		
 			$layout = true;
 		}
 
@@ -152,19 +188,17 @@ include 'functions.php';
 			$tableName = $table['table_name'];
 			echo '</br>Table ' .$tableName. '</br>';
 			//Retrieve target table
-			$sql = 'SELECT tmt.table_name, tmt.record_count, tmt.normal_layout::int normal_layout, ttm.target_name
-				FROM
-					-- manifest.t_manifest_version tmv,
-					' .$dbman. '.t_manifest_tables tmt, ' .$dbman. '.t_table_mappings ttm
-				-- WHERE tmv.version = \'world_sql_content_b8ee8e3cc4c38460966cee2f10e238a3.content\'
+			
+			$sql = 'SELECT tmt.table_name, tsmt.record_count, tmt.normal_layout::int normal_layout, ttm.target_name FROM
+					' .$dbman. '.t_manifest_tables tmt, ' .$dbman. '.t_table_mappings ttm,
+					' .$dbman. '.t_stg_manifest_tables tsmt
 				WHERE
-					-- tmv.current = true AND
 					tmt.table_name = \'' .$tableName. '\'
-				-- AND tmv.manifest_id = tmt.manifest_id
 				AND tmt.table_id = ttm.table_id
+				AND tmt.table_name = tsmt.table_name
 				ORDER BY tmt.table_name';
 			
-			//echo $sql. '</br>';
+			//echo $sql. '</br>'; //Troubleshooting
 			
 			$targetResult = pg_query($pgConn, $sql);
 			$targetTable = pg_fetch_all($targetResult);
@@ -175,16 +209,11 @@ include 'functions.php';
 			$layout = (bool)$targetTable[0]['normal_layout'];
 			//echo 'Layout ' .$layout. '</br>'; //Troubleshooting
 
-			$sql = 'SELECT tmt.table_name, tfm.source_field, tfm.target_field
-				FROM
-					-- manifest.t_manifest_version tmv,
+			$sql = 'SELECT tmt.table_name, tfm.source_field, tfm.target_field FROM
 					' .$dbman. '.t_manifest_tables tmt, ' .$dbman. '.t_field_mappings tfm
-				-- WHERE tmv.version = \'world_sql_content_b8ee8e3cc4c38460966cee2f10e238a3.content\'
 				WHERE
-					-- tmv.current = true AND
 				tfm.staging = true
 				AND tmt.table_name = \'' .$tableName. '\'
-				-- AND tmv.manifest_id = tmt.manifest_id
 				AND tmt.table_id = tfm.table_id
 				ORDER BY tmt.table_name';
 			
@@ -253,6 +282,22 @@ include 'functions.php';
 			
 			echo 'Inserted ' .$insertCount. ' record(s)...</br>';
 		}
+		//Load the history
+		$sql = 'INSERT INTO ' .$dbman. '.t_manifest_history (effective_date, manifest_version, table_name, record_count)';
+		$sql .= ' SELECT tmv.effective_date, tmv.version manifest_version,';
+		$sql .= ' tmt.table_name, tsmt.record_count';
+		$sql .= ' FROM ' .$dbman. '.t_manifest_version tmv, ' .$dbman. '.t_manifest_tables tmt,';
+		$sql .= ' ' .$dbman. '.t_manifest_manifest_tables tmmt, ' .$dbman. '.t_stg_manifest_tables tsmt';
+		$sql .= ' WHERE tmv.current = TRUE';
+		$sql .= ' AND tmv.manifest_id = tmmt.manifest_id';
+		$sql .= ' AND tmmt.table_id = tmt.table_id';
+		$sql .= ' AND tmt.table_name = tsmt.table_name';
+		$sql .= ' ORDER BY tmt.table_name';
+		
+		$historyResult = pg_query($pgConn, $sql);
+		$historyCount = pg_affected_rows($historyResult);
+		
+		echo 'Inserted ' .$historyCount. ' history record(s)...</br>';
 		
 	} else {
 		echo $localPath. ' was processed previously...</br>';
@@ -260,4 +305,5 @@ include 'functions.php';
 	
 	//Close Postgres data connection
 	pg_close($pgConn);
+
 ?>

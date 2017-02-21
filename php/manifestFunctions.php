@@ -1,5 +1,4 @@
 <?php
-//include '../inc/db.inc';
 
 	function get_manifest($remotePath, $localPath) {
 		echo 'Downloading https://www.bungie.net' .$remotePath.'<br/>';
@@ -15,12 +14,15 @@
 		file_put_contents($localPath. '.zip', $data);
 		echo 'Extracting archive...</br>';
 		
-		$zip = new ZipArchive();
+		$zip = new ZipArchive() or die ('Unable to create ZipArchive object.</br>');
+		
 		if ($zip->open($localPath.'.zip') === TRUE) {
 			//$zip->extractTo('.');
-			//echo 'Extracting to ' .pathinfo($localPath, PATHINFO_DIRNAME). '</br>';
+			echo 'Extracting to ' .pathinfo($localPath, PATHINFO_DIRNAME). '</br>';
 			$zip->extractTo(pathinfo($localPath, PATHINFO_DIRNAME));
 			$zip->close();
+		} else {
+			echo 'Something went wrong opening ' .$localPath. '.zip</br>';
 		}
 		
 		curl_close($ch);

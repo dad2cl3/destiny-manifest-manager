@@ -54,7 +54,7 @@ The function will output JSON as follows:
 }
 ```
 
-*alter_sql - Shows the alter table statement executed against the appropriate table
-*field_mapping - Shows the count of records added to t_field_mappings
-*update_sql - Shows the update statement executed against the appropriate table to populate the new column
-*update - Shows the count of records in the appropriate table that were updated
+- alter_sql - Shows the alter table statement executed against the appropriate table
+- field_mapping - Shows the count of records added to t_field_mappings
+- update_sql - Shows the update statement executed against the appropriate table to populate the new column
+- update - Shows the count of records in the appropriate table that were updated

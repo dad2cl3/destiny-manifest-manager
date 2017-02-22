@@ -25,12 +25,12 @@ The Postgres function fn_add_column adds an additional column to the appropriate
 
 The function takes five parameters:
 
-  *Source table - The manifest table from which the new field will be sourced.
-  *Source field - The parsed JSON utilizing Postgres JSON parsing syntax formatted for storage in the database.
-  *Target field - The field to be added to the appropriate database table and where the parsed JSON data from the source field will be stored
+  - Source table - The manifest table from which the new field will be sourced.
+  - Source field - The parsed JSON utilizing Postgres JSON parsing syntax formatted for storage in the database.
+  - Target field - The field to be added to the appropriate database table and where the parsed JSON data from the source field will be stored
   
-  *Target data type - The data type of the target field which will be added to the appropriate database table.
-  *Staging flag - Indicates whether the new field should be utilized for staging the manifest data. The value should always be false at this time.
+  - Target data type - The data type of the target field which will be added to the appropriate database table.
+  - Staging flag - Indicates whether the new field should be utilized for staging the manifest data. The value should always be false at this time.
 
 The snippet that follows is an example of how to call the function to add a column:
 

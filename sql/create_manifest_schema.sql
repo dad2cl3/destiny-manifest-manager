@@ -1,1 +1,3 @@
 CREATE SCHEMA IF NOT EXISTS manifest;
+
+GRANT USAGE ON SCHEMA manifest TO node_batch;

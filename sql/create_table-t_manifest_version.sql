@@ -8,6 +8,8 @@ CREATE TABLE manifest.t_manifest_version (
 	CONSTRAINT pk_manifest_id PRIMARY KEY (manifest_id)
 );
 
+CREATE INDEX pk_manifest_id ON manifest.t_manifest_version USING btree(manifest_id);
+
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON manifest.t_manifest_version TO node_batch;
 
 ALTER SEQUENCE manifest.seq_t_manifest_version_manifest_id OWNED BY manifest.t_manifest_version.manifest_id;

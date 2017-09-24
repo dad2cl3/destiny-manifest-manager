@@ -63,3 +63,37 @@ ORDER BY
 	tas.characterId,
 	tm.json ->> 'activityName',
 	tm.json ->> 'activityLevel';
+
+/*
+	The following queries demonstrate how to query the manifest data to see changes
+	version over version
+*/
+	--Current manifest version
+	SELECT manifest_id current_manifest_id
+	FROM manifest.t_manifest_version
+	WHERE current = TRUE;
+	
+	-- New manifest records
+	SELECT table_name, COUNT(*)
+	FROM manifest.t_manifest tm, manifest.t_manifest_version tmv
+	WHERE tmv.current = TRUE
+	AND tm.created_by < tmv.manifest_id
+	AND tm.last_updated_by = tmv.manifest_id
+	GROUP BY table_name
+	ORDER BY table_name;
+
+	--Updated manifest records
+	SELECT table_name, COUNT(*)
+	FROM manifest.t_manifest tm, manifest.t_manifest_version tmv
+	WHERE tmv.current = TRUE 
+	AND tm.created_by = tmv.manifest_id
+	GROUP BY table_name
+	ORDER BY table_name;
+	
+	--Deleted manifest records
+	SELECT table_name, COUNT(*)
+	FROM manifest.t_manifest tm, manifest.t_manifest_version tmv
+	WHERE tmv.current = TRUE 
+	AND tm.deleted_by = tmv.manifest_id
+	GROUP BY table_name
+	ORDER BY table_name;

@@ -8,9 +8,10 @@ exports.pgPoolOptions = {
 };
 
 exports.db = {
-    schema : 'manifest',
-    versionLog : 't_manifest_version',
-    dataTable : 't_manifest'
+    schema : 'YOUR-SCHEMA',
+    versionLog : 'YOUR-VERSION-TABLE',
+    stageTable : 'YOUR-STAGE-TABLE',
+    dataTable : 'YOUR-TABLE'
 };
 
 //Bungie.net configuration
@@ -19,7 +20,12 @@ exports.manifestUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/`;
 
 //AWS configuration
 exports.aws = {
-    accessKeyId : 'YOUR-AWS-ACCESS-KEY-ID',
-    secretAccessKey : 'YOUR-AWS-SECRET-ACCESS-KEY',
+    accessKeyId : 'YOUR-ACCESS-KEY-ID',
+    secretAccessKey : 'YOUR-SECRET-ACCESS-KEY',
     region : 'YOUR-AWS-REGION'
 };
+
+exports.s3 = {
+    bucket : 'YOUR-BUCKET',
+    acl : 'public-read'
+}

@@ -31,7 +31,7 @@ function getApiManifest () {
 					'path': currentPath
 				}
 			};
-			//console.log(manifest);
+			//console.log(manifest); //troubleshooting
 
 			return manifest;
 	});
@@ -48,6 +48,7 @@ function getDbManifest(manifest) {
 		
 		if (rowCount === 1) {
 			manifest.db = {
+				'path' : rows[0].version.path,
 				'version': rows[0].version.version
 			};
 		} else if (rowCount === 0) {
@@ -56,6 +57,7 @@ function getDbManifest(manifest) {
 			}
 		};
 
+		//console.log(manifest); //troubleshooting
 		return manifest;
 	});
 }
@@ -63,7 +65,7 @@ function getDbManifest(manifest) {
 function checkVersions (manifest) {
 	console.log('Comparing versions...');
 
-	if (manifest.api.version === manifest.db.version) {
+	if (manifest.api.version === manifest.db.version && manifest.api.path === manifest.db.path) {
 		//Old manifest
 		console.log(`Manifest version ${manifest.api.version} already downloaded.`);
 
@@ -72,9 +74,9 @@ function checkVersions (manifest) {
 		//New manifest found
 		console.log(`Manifest version ${manifest.api.version} available for download.`);
 
-		return pgPool.query(config.sql.update)
+		return pgPool.query(sql.update)
 			.then(res => {
-				return pgPool.query(config.sql.insert, [manifest.api])
+				return pgPool.query(sql.insert, [manifest.api])
 					.then(res => {
 						return { download : true, manifestId : res.rows[0].manifest_id, path : manifest.api.path };
 					})

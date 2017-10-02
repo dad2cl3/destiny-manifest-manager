@@ -20,7 +20,7 @@ CREATE INDEX  idx_t_manifest_json ON manifest.t_manifest USING gin(json) WITH (F
 CREATE INDEX  idx_t_manifest_pk ON manifest.t_manifest USING gin(pk) WITH (FASTUPDATE = YES);
 CREATE INDEX  idx_t_manifest_table_name ON manifest.t_manifest USING btree(table_name);
 
-CREATE TRIGGER trg_last_updated BEFORE UPDATE ON manifest.t_manifest FOR EACH ROW EXECUTE PROCEDURE fn_last_updated();
+CREATE TRIGGER trg_last_updated BEFORE UPDATE ON manifest.t_manifest FOR EACH ROW EXECUTE PROCEDURE manifest.fn_last_updated();
 
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON manifest.t_manifest TO node_batch;
 -- GRANT SELECT ON manifest.t_manifest TO manifest_user;

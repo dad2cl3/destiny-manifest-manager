@@ -41,7 +41,7 @@ BEGIN
 	SET
 		deleted = NOW(),
 		deleted_by = 1
-	WHERE
+	WHERE deleted IS NULL AND
 		NOT EXISTS (
 			SELECT 'x'
 			FROM manifest.t_manifest_stage
